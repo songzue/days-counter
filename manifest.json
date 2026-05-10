@@ -1,0 +1,12 @@
+{
+  "name": "Days — 日期计时器",
+  "short_name": "Days",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#0f0f0f",
+  "description": "记录重要日子的天数",
+  "icons": [
+    { "src": "icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
