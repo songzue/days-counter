@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Days</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f0f0f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Days">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      background: #0f0f0f;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      overscroll-behavior: none;
+    }
+    canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 440px;
+      margin: 0 auto;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 16px 28px;
+    }
+    .title {
+      font-size: 13px;
+      color: rgba(255,255,255,0.35);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    .add-btn {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: transparent;
+      color: rgba(255,255,255,0.5);
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      transition: all 0.2s;
+    }
+    .add-btn:active { background: rgba(255,255,255,0.08); color: #fff; }
+    .counters { flex: 1; display: flex; flex-direction: column; gap: 16px; }
+    .counter {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 20px;
+      padding: 22px 20px;
+      position: relative;
+      transition: background 0.25s;
+      cursor: pointer;
+    }
+    .counter:active { background: rgba(255,255,255,0.06); }
+    .counter-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .counter-name {
+      font-size: 13px;
+      color: rgba(255,255,255,0.4);
+    }
+    .counter-del {
+      font-size: 20px;
+      color: rgba(255,255,255,0.18);
+      cursor: pointer;
+      line-height: 1;
+      padding: 0 4px;
+      transition: color 0.2s;
+    }
+    .counter-del:active { color: #e05555; }
+    .counter-num {
+      font-size: 62px;
+      font-weight: 200;
+      color: #fff;
+      line-height: 1;
+      letter-spacing: -2px;
+    }
+    .counter-sub {
+      font-size: 12px;
+      color: rgba(255,255,255,0.22);
+      margin-top: 4px;
+    }
+    .empty {
+      color: rgba(255,255,255,0.12);
+      text-align: center;
+      padding: 80px 0;
+      font-size: 14px;
+      letter-spacing: 1px;
+    }
+    .form-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .form-overlay.show { display: flex; }
+    .form-card {
+      background: #1a1a1a;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 24px 24px 0 0;
+      padding: 32px 24px 40px;
+      width: 100%;
+      max-width: 440px;
+      animation: slideUp 0.25s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .form-card input {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: #fff;
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+      margin-bottom: 12px;
+      -webkit-appearance: none;
+    }
+    .form-card input:focus { border-color: rgba(255,255,255,0.25); }
+    .form-card input::placeholder { color: rgba(255,255,255,0.2); }
+    .form-card .btn-row { display: flex; gap: 8px; margin-top: 6px; }
+    .form-card .btn-row button {
+      flex: 1;
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 15px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-save { background: #fff; color: #111; font-weight: 600; }
+    .btn-save:active { opacity: 0.8; }
+    .btn-cancel { background: transparent; color: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.08) !important; }
+    .btn-cancel:active { color: #fff; }
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.5; }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <div class="app">
+    <div class="header">
+      <span class="title">Days</span>
+      <button class="add-btn" id="addBtn">+</button>
+    </div>
+    <div class="counters" id="counters"></div>
+  </div>
+
+  <div class="form-overlay" id="overlay">
+    <div class="form-card">
+      <input type="text" id="nameInput" placeholder="名称，比如「在一起」">
+      <input type="date" id="dateInput">
+      <div class="btn-row">
+        <button class="btn-cancel" id="cancelBtn">取消</button>
+        <button class="btn-save" id="saveBtn">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- particles ---
+    const c = document.getElementById('c');
+    const ctx = c.getContext('2d');
+    let w, h;
+    const pts = [];
+    function resize() { w = c.width = window.innerWidth; h = c.height = window.innerHeight; }
+    resize(); window.addEventListener('resize', resize);
+    for (let i = 0; i < 50; i++) {
+      pts.push({ x: Math.random()*w, y: Math.random()*h, vx: (Math.random()-0.5)*0.25, vy: (Math.random()-0.5)*0.25, r: Math.random()*1+0.3 });
+    }
+    function draw() {
+      ctx.clearRect(0,0,w,h);
+      for (const p of pts) {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x<0) p.x=w; if (p.x>w) p.x=0;
+        if (p.y<0) p.y=h; if (p.y>h) p.y=0;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fill();
+      }
+      requestAnimationFrame(draw);
+    }
+    draw();
+
+    // --- data ---
+    const KEY = 'days-data';
+    let counters = [];
+
+    function load() {
+      try { counters = JSON.parse(localStorage.getItem(KEY)) || []; } catch(e) { counters = []; }
+      render();
+    }
+
+    function save() {
+      localStorage.setItem(KEY, JSON.stringify(counters));
+      render();
+    }
+
+    function formatDate(d) {
+      return d.toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric' });
+    }
+
+    function calcDays(dateStr) {
+      const start = new Date(dateStr + 'T00:00:00');
+      const now = new Date(); now.setHours(0,0,0,0);
+      return Math.max(0, Math.round((now - start) / 86400000));
+    }
+
+    function render() {
+      const el = document.getElementById('counters');
+      if (!counters.length) {
+        el.innerHTML = '<div class="empty">点击 + 添加第一个计时</div>';
+        return;
+      }
+      el.innerHTML = counters.map((c, i) => `
+        <div class="counter">
+          <div class="counter-top">
+            <span class="counter-name">${c.name || '未命名'}</span>
+            <span class="counter-del" data-i="${i}">&times;</span>
+          </div>
+          <div class="counter-num">${calcDays(c.date)}</div>
+          <div class="counter-sub">从 ${formatDate(new Date(c.date + 'T00:00:00'))} 到现在</div>
+        </div>
+      `).join('');
+
+      el.querySelectorAll('.counter-del').forEach(d => {
+        d.addEventListener('click', e => {
+          e.stopPropagation();
+          counters.splice(+d.dataset.i, 1);
+          save();
+        });
+      });
+    }
+
+    const overlay = document.getElementById('overlay');
+    document.getElementById('addBtn').addEventListener('click', () => {
+      overlay.classList.add('show');
+      document.getElementById('dateInput').valueAsDate = new Date();
+      document.getElementById('nameInput').value = '';
+    });
+    document.getElementById('cancelBtn').addEventListener('click', () => overlay.classList.remove('show'));
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('show'); });
+    document.getElementById('saveBtn').addEventListener('click', () => {
+      const name = document.getElementById('nameInput').value.trim() || '未命名';
+      const date = document.getElementById('dateInput').value;
+      if (!date) return;
+      counters.push({ name, date });
+      counters.sort((a, b) => new Date(a.date) - new Date(b.date));
+      save();
+      overlay.classList.remove('show');
+    });
+
+    // --- sw ---
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js');
+    }
+
+    load();
+  </script>
+</body>
+</html>
